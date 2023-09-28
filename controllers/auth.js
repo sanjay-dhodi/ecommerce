@@ -36,7 +36,7 @@ const loginUser = (req, resp, next) => {
       bcrypt.compare(password, foundUser.password, function (err, result) {
         if (result == true) {
           resp.send("succefully login");
-        }
+        } 
       });
     });
   } catch (error) {
