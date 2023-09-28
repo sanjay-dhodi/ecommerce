@@ -1,4 +1,6 @@
 const renderShopPage = (req, resp, next) => {
+  console.log(req.session.loginUser);
+
   resp.render("shop");
 };
 
@@ -10,4 +12,4 @@ const renderSignupPage = (req, resp, next) => {
   resp.render("register");
 };
 
-module.exports = { renderShopPage, renderLoginPage ,renderSignupPage};
+module.exports = { renderShopPage, renderLoginPage, renderSignupPage };

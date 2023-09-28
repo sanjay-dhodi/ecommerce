@@ -13,6 +13,7 @@ const signupUser = async (req, resp, next) => {
         const user = new usermodel({
           email: email,
           password: hash,
+          cartItem: ["ff", "HH", "gg"],
         });
 
         user.save();
@@ -35,8 +36,11 @@ const loginUser = (req, resp, next) => {
     usermodel.findOne({ email: email }).then((foundUser) => {
       bcrypt.compare(password, foundUser.password, function (err, result) {
         if (result == true) {
-          resp.send("succefully login");
-        } 
+          const { password, ...otherDetails } = foundUser._doc;
+
+          req.session.loginUser = otherDetails;
+          resp.redirect("/");
+        }
       });
     });
   } catch (error) {
@@ -44,4 +48,9 @@ const loginUser = (req, resp, next) => {
   }
 };
 
-module.exports = { signupUser, loginUser };
+const logout = (req, resp, next) => {
+  req.session.destroy();
+  resp.redirect("/login");
+};
+
+module.exports = { signupUser, loginUser, logout };
