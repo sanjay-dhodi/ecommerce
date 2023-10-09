@@ -1,15 +1,25 @@
 const renderShopPage = (req, resp, next) => {
-  console.log(req.session.loginUser);
-
-  resp.render("shop");
+  if (!req.user) {
+    resp.render("shop", { loginUser: false });
+  } else {
+    resp.render("shop", { loginUser: true });
+  }
 };
 
 const renderLoginPage = (req, resp, next) => {
-  resp.render("login");
+  if (!req.user) {
+    resp.render("login", { loginUser: false });
+  } else {
+    resp.render("login", { loginUser: true });
+  }
 };
 
 const renderSignupPage = (req, resp, next) => {
-  resp.render("register");
+  if (!req.user) {
+    resp.render("register", { loginUser: false });
+  } else {
+    resp.render("register", { loginUser: true });
+  }
 };
 
 module.exports = { renderShopPage, renderLoginPage, renderSignupPage };

@@ -3,21 +3,25 @@ const ProductsModel = require("../models/product.js");
 // ####### render controllers #################
 
 const renderAddproducts = (req, resp, next) => {
-  resp.render("admin/add_product");
+  if (!req.user) {
+    resp.redirect("/login");
+  } else {
+    resp.render("admin/add_product", { loginUser: true });
+  }
 };
 
 const renderProducts = (req, resp, next) => {
-  resp.render("products");
+  if (!req.user) {
+    resp.render("products", { loginUser: false });
+  } else {
+    resp.render("products", { loginUser: true });
+  }
 };
 
 // ########  post controllers #############
 
 const addProduct = (req, resp, next) => {
-  const product = new ProductsModel(req.body.product_name,"sanju");
-  product.save();
-
-  console.log(ProductsModel.fetchAll());
-  resp.send("");
+  resp.send("no data saved yet");
 };
 
 module.exports = { renderAddproducts, renderProducts, addProduct };

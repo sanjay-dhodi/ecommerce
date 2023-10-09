@@ -29,12 +29,13 @@
               <li><a href="#">menu</a></li>
             </ul>
             <div>
+              <% if(loginUser){ %>
+              <a href="/logout"> <button class="primary-button">logout</button></a>
+              <% }else{ %>
               <a href="/login"><button class="primary-button">login</button></a>
-              <a href="/logout"><button class="primary-button">logout</button></a>
+              <% } %>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </body>
-</html>
+

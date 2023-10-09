@@ -5,16 +5,19 @@ const session = require("express-session");
 const mongostore = require("connect-mongo");
 
 const bodyparser = require("body-parser");
+const cookieparser = require("cookie-parser");
 const productsRoutes = require("./routes/products");
 const shopRoutes = require("../e-commerce app/routes/shop");
 const authRoutes = require("../e-commerce app/routes/auth");
 
-app.use(bodyparser.urlencoded({ extended: false }));
 
+app.use(bodyparser.urlencoded({ extended: false }));
+app.use(cookieparser());
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
 //############### SESSION initialise
+
 app.use(
   session({
     secret: process.env.SESSION_SECRETE,
@@ -23,6 +26,9 @@ app.use(
     store: mongostore.create({
       mongoUrl: process.env.MONGOURL,
     }),
+    cookie: {
+      httpOnly: true,
+    },
   })
 );
 
