@@ -2,6 +2,16 @@
 const usermodel = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.GEMAIL,
+    pass: process.env.PASSWORD,
+  },
+});
 
 const signupUser = async (req, resp, next) => {
   const email = req.body.email;
@@ -63,4 +73,61 @@ const logout = (req, resp, next) => {
   resp.redirect("/login");
 };
 
-module.exports = { signupUser, loginUser, logout };
+const forgotpassword = (req, resp, next) => {
+  console.log(process.env.JWT_SECRETE);
+
+  if (!req.user) {
+    resp.render("forgotpassword", { loginUser: false });
+  } else {
+    resp.render("forgotpassword", { loginUser: true });
+  }
+};
+
+const postforgotpassword = (req, resp, next) => {
+  const email = req.body.email;
+
+  try {
+    usermodel.findOne({ email: email }).then((user) => {
+      if (!user) {
+        console.log("you are not registered user please register !");
+      } else {
+        crypto.randomBytes(32, (err, buffer) => {
+          if (err) {
+            console.log("crypto token error");
+            resp.redirect("/forgotpassword");
+          }
+
+          if (!err) {
+            const bufftoken = buffer.toString("hex");
+
+            user.resetToken = bufftoken;
+            user.resetTokenExpiry = Date.now() + 3600000;
+            user.save();
+
+            const mailOptions = {
+              from: "infosanju07@gmail.com", // Sender's email address
+              to: "infosanju07@gmail.com", // Recipient's email address
+              subject: "Hello from Node.js",
+              html: "<h1>" + bufftoken + "</h1> ",
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+              if (error) {
+                console.error("Error sending email:", error);
+                resp.status(500).send("Error sending email");
+              } else {
+                console.log("Email sent:", info.response);
+                resp.send("Email sent successfully");
+              }
+            });
+          }
+        });
+        // console.log("email sent to your registered email please check ");
+      }
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+module.exports = { signupUser, loginUser, logout, forgotpassword, postforgotpassword };

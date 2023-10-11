@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   cartItem: [],
+  resetToken: String,
+  resetTokenExpiry: String,
 });
 
 const UserModel = mongoose.model("user", userSchema);
