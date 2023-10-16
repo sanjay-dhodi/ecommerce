@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const { createSecurePair } = require("tls");
 
 const transporter = nodemailer.createTransport({
   service: "Gmail",
@@ -90,9 +91,11 @@ const postforgotpassword = (req, resp, next) => {
     usermodel.findOne({ email: email }).then((user) => {
       if (!user) {
         console.log("you are not registered user please register !");
+        resp.redirect("/login");
       } else {
         crypto.randomBytes(32, (err, buffer) => {
           if (err) {
+            53;
             console.log("crypto token error");
             resp.redirect("/forgotpassword");
           }
@@ -105,18 +108,21 @@ const postforgotpassword = (req, resp, next) => {
             user.save();
 
             const mailOptions = {
-              from: "infosanju07@gmail.com", // Sender's email address
-              to: "infosanju07@gmail.com", // Recipient's email address
+              from: process.env.FROM_EMAIL, // Sender's email address
+              to: process.env.TO_EMAIL, // Recipient's email address
               subject: "Hello from Node.js",
-              html: "<h1>" + bufftoken + "</h1> ",
+              text: "password reset link to reset password visit on below link",
+              html: "<a href='http://localhost:1888/reset/'" + bufftoken + ">click on this link</a> ",
             };
+
+            console.log("http://localhost:1888/reset/" + bufftoken);
 
             transporter.sendMail(mailOptions, (error, info) => {
               if (error) {
                 console.error("Error sending email:", error);
                 resp.status(500).send("Error sending email");
               } else {
-                console.log("Email sent:", info.response);
+                console.log("Email sent:", info);
                 resp.send("Email sent successfully");
               }
             });
