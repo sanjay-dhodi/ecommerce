@@ -10,11 +10,10 @@ const productsRoutes = require("./routes/products");
 const shopRoutes = require("../e-commerce app/routes/shop");
 const authRoutes = require("../e-commerce app/routes/auth");
 
-
-app.use(bodyparser.urlencoded({ extended: false }));
-app.use(cookieparser());
 app.set("view engine", "ejs");
 app.use(express.static("public"));
+app.use(bodyparser.urlencoded({ extended: false }));
+app.use(cookieparser());
 
 //############### SESSION initialise
 

@@ -18,6 +18,7 @@ const renderProducts = (req, resp, next) => {
   }
 };
 
+
 // ########  post controllers #############
 
 const addProduct = (req, resp, next) => {

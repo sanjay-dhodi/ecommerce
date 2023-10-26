@@ -4,7 +4,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const { createSecurePair } = require("tls");
+const ejs = require("ejs");
+
+const { validationResult } = require("express-validator");
 
 const transporter = nodemailer.createTransport({
   service: "Gmail",
@@ -19,30 +21,44 @@ const signupUser = async (req, resp, next) => {
   const password = req.body.password;
   const confirmPassword = req.body.confirmPassword;
 
-  if (confirmPassword === password) {
-    bcrypt.hash(password, 12, function (err, hash) {
-      try {
-        const user = new usermodel({
-          email: email,
-          password: hash,
-          cartItem: ["ff", "HH", "gg"],
-        });
+  const error = validationResult(req);
+  if (!error.isEmpty()) {
+    console.log(error);
+  }
 
-        user.save();
+  const alreadyExistuser = await usermodel.findOne({ email: email });
+  if (alreadyExistuser) {
+    console.log("this user is already exist try with diffrent email");
+    resp.redirect("/signup");
+  }
 
-        resp.redirect("/login");
-      } catch (error) {
-        console.log(error);
-      }
-    });
-  } else {
-    console.log("confirm password does not match");
+  if (!alreadyExistuser) {
+    if (confirmPassword === password) {
+      bcrypt.hash(password, 12, function (err, hash) {
+        try {
+          const user = new usermodel({
+            email: email,
+            password: hash,
+            cartItem: ["ff", "HH", "gg"],
+          });
+          user.save();
+          console.log("user successfully created");
+          resp.redirect("/login");
+        } catch (error) {
+          console.log(error);
+        }
+      });
+    } else {
+      console.log("confirm password does not match");
+    }
   }
 };
 
 const loginUser = (req, resp, next) => {
   const email = req.body.email;
   const password = req.body.password;
+
+  ejs.clearCache();
 
   try {
     usermodel.findOne({ email: email }).then((foundUser) => {
@@ -54,9 +70,6 @@ const loginUser = (req, resp, next) => {
           if (result == true) {
             const { _id } = foundUser._doc;
             const token = jwt.sign({ id: _id.toString() }, process.env.JWT_SECRETE);
-
-            //  encrypting JWT token  for store in cookie
-
             resp.cookie("access_token", token, { httpOnly: true, secure: true });
             resp.redirect("/");
           }
@@ -75,8 +88,6 @@ const logout = (req, resp, next) => {
 };
 
 const forgotpassword = (req, resp, next) => {
-  console.log(process.env.JWT_SECRETE);
-
   if (!req.user) {
     resp.render("forgotpassword", { loginUser: false });
   } else {
@@ -95,17 +106,14 @@ const postforgotpassword = (req, resp, next) => {
       } else {
         crypto.randomBytes(32, (err, buffer) => {
           if (err) {
-            53;
             console.log("crypto token error");
             resp.redirect("/forgotpassword");
           }
 
           if (!err) {
             const bufftoken = buffer.toString("hex");
-
             user.resetToken = bufftoken;
             user.resetTokenExpiry = Date.now() + 3600000;
-            user.save();
 
             const mailOptions = {
               from: process.env.FROM_EMAIL, // Sender's email address
@@ -115,13 +123,13 @@ const postforgotpassword = (req, resp, next) => {
               html: "<a href='http://localhost:1888/reset/'" + bufftoken + ">click on this link</a> ",
             };
 
-            console.log("http://localhost:1888/reset/" + bufftoken);
-
             transporter.sendMail(mailOptions, (error, info) => {
               if (error) {
                 console.error("Error sending email:", error);
                 resp.status(500).send("Error sending email");
               } else {
+                // save token in database
+                user.save();
                 console.log("Email sent:", info);
                 resp.send("Email sent successfully");
               }
@@ -136,4 +144,63 @@ const postforgotpassword = (req, resp, next) => {
   }
 };
 
-module.exports = { signupUser, loginUser, logout, forgotpassword, postforgotpassword };
+const renderResetPage = async (req, resp, next) => {
+  const resetToken = req.params.token;
+
+  if (!resetToken) {
+    console.log("reset Token not found");
+  }
+
+  if (resetToken) {
+    try {
+      await usermodel
+        .findOne({ resetToken: resetToken })
+        .then((user) => {
+          if (!user) {
+            console.log("user not found with this token");
+            resp.redirect("/login");
+          } else {
+            if (!req.user) {
+              resp.render("resetpassword", { loginUser: false });
+            } else {
+              resp.render("resetpassword", { loginUser: true });
+            }
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+};
+
+const resetpassword = (req, resp, next) => {
+  const resetToken = req.params.token;
+
+  if (!resetToken) {
+    resp.redirect("/login");
+  } else if (resetToken) {
+    usermodel
+      .findOne({ resetToken: resetToken })
+      .then((user) => {
+        if (!user) {
+          resp.json({ msg: "usernot found" });
+        } else {
+          resp.json({ foundUser: user });
+          user.resetTokenExpiry = undefined;
+          user.resetToken = undefined;
+          user.save();
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  } else {
+    console.log("reset token is not set invalid request");
+    resp.redirect("/login");
+  }
+};
+
+module.exports = { signupUser, loginUser, logout, forgotpassword, postforgotpassword, renderResetPage, resetpassword };
